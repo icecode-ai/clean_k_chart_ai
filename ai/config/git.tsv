@@ -1,0 +1,3 @@
+# path  url branch
+modules/clean_k_chart	git@github.com:icecode-ai/clean_k_chart.git	main
+readonly-dependencies/k_chart_plus	https://github.com/TrangLeQuynh/k_chart_plus.git	dev
