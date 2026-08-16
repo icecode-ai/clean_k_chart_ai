@@ -20,7 +20,8 @@ Each project under `modules/` is an independent git repository with its own git 
 
 | Module Name | Path | Guidance File | Description |
 |-------------|------|---------------|-------------|
-| clean_k_chart | `modules/clean_k_chart` | `modules/clean_k_chart/AGENTS.md` | K-chart project — newly initialized, no code/toolchain yet |
+| clean_k_chart | `modules/clean_k_chart` | `modules/clean_k_chart/AGENTS.md` | K-chart package — Flutter/Dart, early stage |
+| clean_k_chart_example | `modules/clean_k_chart_example` | `modules/clean_k_chart_example/AGENTS.md` | Example app for clean_k_chart — empty repo, no code/toolchain yet |
 
 ## readonly-dependencies
 
