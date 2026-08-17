@@ -82,7 +82,7 @@ if bash "ai/config/skills/goal-spec-apply/scripts/edit-roots.sh" "$change_dir/pr
   # Fence-aware task-number extraction (skip ```-fenced regions, consistent with
   # mark-task-done.sh / planned-files.sh) — avoids matching example "### Task N:"
   # headers inside code blocks.
-  for N in $(awk 'BEGIN{f=0} /^```/{f=!f;next} f{next} /^### Task [0-9]+:/{line=$0; sub(/^### Task /,"",line); sub(/:.*/,"",line); print line}' "$change_dir/tasks.md" | sort -n -u); do
+  for N in $(awk 'BEGIN{f=0} /^```/{f=!f;next} f{next} /^### Task [A-Za-z0-9][A-Za-z0-9.-]*:/{line=$0; sub(/^### Task /,"",line); sub(/:.*/,"",line); print line}' "$change_dir/tasks.md" | sort -u); do
     bash "ai/config/skills/goal-spec-apply/scripts/planned-files.sh" "$change_dir/tasks.md" "$N" "$change_dir/sdd/task-$N-planned.txt" >/dev/null
     bash "ai/config/skills/goal-spec-apply/scripts/check-scope.sh" "$change_dir/sdd/task-$N-planned.txt" "$change_dir/sdd/edit-roots.txt" || true
   done
@@ -102,6 +102,8 @@ Root-level files (`package.json`, `tsconfig.json`, …) are intentionally not ro
 ### 7. Implement tasks (wave-based parallel subagent-driven loop)
 
 Dispatch independent implementers **concurrently within each wave**, review them concurrently, then repeat for the next wave. `Parallelizable: yes` tasks with no file overlap and satisfied dependencies run in parallel; `Parallelizable: no` tasks run alone. **Waves are sequential** — no cross-wave overlap (do not start the next wave's implementers until this wave's reviews finish). The parallelism comes from within-wave concurrent implementers + concurrent reviewers.
+
+**Execute ALL tasks continuously — never ask the user how many tasks to run, whether to execute a subset first, or whether to defer some to later.** Large task counts (10+, 20+, even 50+) are normal and expected; the wave loop handles them all in sequence. The only valid reason to stop mid-run is a genuine blocker (see Guardrails) — never workload size.
 
 #### 7a. Build the ready set + form a parallel batch
 
@@ -201,6 +203,8 @@ bash "ai/config/skills/goal-spec-apply/scripts/files-overlap.sh" "$change_dir/sd
   3. Re-review N; once N passes, **re-dispatch M's implementer fresh** (it will see N's fixed state). Do not review or keep M's overlapped output.
 
 Do not move to the next wave while a task has open Critical/Important issues. Once every task in the wave passes (or is re-dispatched fresh and passes), mark them complete (7g) and proceed to the next wave (7a).
+
+**Fix-re-review cycle limit**: if a task has been through 3 fix-re-review cycles and still has open Critical/Important issues, stop cycling — record the remaining issues in the ledger, mark the task as blocked, and escalate to the user. Do not keep dispatching fix subagents indefinitely.
 
 #### 7g. Mark task complete + update ledger
 
@@ -309,6 +313,6 @@ What would you like to do?
 - Never re-dispatch a task the ledger marks complete; trust the ledger over recollection on resume.
 - Never write "don't flag X" or pre-rate severity in a review dispatch.
 - Never re-dispatch a change whose state is `ALL_DONE`.
-- Keep going through waves until done or blocked; pause on errors/blockers/unclear requirements — don't guess.
+- Keep going through waves until ALL tasks are done or genuinely blocked. **Large task count is NOT a blocker** — never pause, defer, or suggest "continuing in a later session" because the remaining workload looks big. The durable ledger (step 4) survives context compaction by design; if compaction occurs mid-run, resume from the ledger automatically — do not proactively stop. The ONLY valid pause reasons are: (a) a task reports `BLOCKED` and the controller cannot resolve it by adding context, splitting, or re-dispatching (bad plan — escalate to user); (b) a spec ambiguity the controller cannot resolve (ask the user). "Many tasks remaining" and "approaching context limits" are NOT pause reasons.
 - If implementation reveals a design issue, pause and suggest updating artifacts (`/ai-spec-propose` or edit `design.md`/`tasks.md`).
 - No per-task model selection is performed (intentionally not implemented).

@@ -5,3 +5,5 @@ out
 gen
 
 readonly-dependencies/*/*
+ai/output/changes/*/sdd
+ai/output/changes/archive/*/sdd

@@ -50,6 +50,13 @@ If the file is absent, proceed normally (default schema is `spec-driven`).
 
 **Constraint-vs-content rule (mandatory):** `context` and `rules` are constraints for YOU — they guide what you write, but MUST NEVER appear in an artifact file. Do NOT copy `<context>` or `<rules>` blocks into proposal.md, specs, design.md, or tasks.md. They shape the content; they are not the content.
 
+**Load development standards**: Regardless of whether `spec-config.yaml` exists, read the development standard(s) from `ai/config/rules/` relevant to the affected modules' tech stack. Use your Read tool to load the full content of each relevant rule file. Apply these standards as constraints when creating artifacts:
+- `design.md` — architectural decisions MUST comply with the standards
+- `tasks.md` — include key standard requirements (naming rules, layering constraints, required patterns) in the `## Global Constraints` block as one line each, exact values verbatim from the standard
+- `proposal.md` and `specs/` — apply standards as background context
+
+Match rule files to tech stack by semantic relevance — e.g. a Flutter module → `flutter-development-guidelines.md`; a Java module → `java-development-guidelines.md` + applicable sub-rules under `java/`.
+
 ### 5. Create artifacts in dependency order
 
 Use the **TodoWrite tool** to track progress through the artifacts. Use the **Write tool** to create each filled artifact file (write real content, not just the skeleton).
@@ -193,9 +200,17 @@ Fill in the template with architecture decisions, technical approach, and trade-
 > No commit step — in `/ai-spec-apply` neither the controller nor the implementer touches git; the user stages and commits when ready.
 
 ### Task 2: ...
+
+## 2. <Another Task Group Name>
+
+### Task 3: <Component Name>
+<!-- Task numbering CONTINUES across groups (1, 2, 3, ...) — never restarts at a new
+group, never uses letter prefixes (A1/B1) or sub-ids (1.1). /ai-spec-apply's
+scripts parse task IDs as pure integers. -->
 ```
 
 **Task-granularity rules (mandatory):**
+- **Task IDs are pure integers, globally continuous across ALL `## N. <Group>` sections**: `### Task 1:`, `### Task 2:`, `### Task 3:`, … Never `A1`, `B1`, `1.1`, or any non-numeric prefix. The `## N. <Group>` heading is purely visual grouping — it does NOT affect task numbering, and numbering never restarts at a new group. `/ai-spec-apply`'s scripts parse these IDs as numbers; a non-numeric ID breaks apply.
 - Each task is the smallest unit that carries its own test cycle and a fresh reviewer's gate (2-5 minutes per step). Fold setup/scaffolding/docs into the task whose deliverable needs them.
 - **Exact file paths always** (no "the appropriate file"). **Complete code in every step** that changes code. **Exact commands with expected output**.
 - **No placeholders**: never write "TBD", "TODO", "implement later", "add appropriate error handling", "similar to Task N" (repeat the code), or steps that describe what without showing how.
@@ -220,7 +235,15 @@ After all four artifacts are written and verified, run this checklist **yourself
    - `## RENAMED Requirements` has `FROM:` / `TO:`; if the body also changes, a `## MODIFIED` entry under the new name follows it.
    - Every requirement has ≥1 `#### Scenario:` with WHEN/THEN, using SHALL/MUST.
 
-**5. Global Constraints presence:** `tasks.md` contains a `## Global Constraints` block with project-wide requirements (version floors, dependency limits, naming/copy rules) as one line each, exact values verbatim from the spec. `/ai-spec-apply` extracts this block verbatim and feeds it to every per-task reviewer — a missing or vague block means reviewers review without the project's mandatory constraints.
+**5. Global Constraints presence:** `tasks.md` contains a `## Global Constraints` block with project-wide requirements (version floors, dependency limits, naming/copy rules, and key development standard requirements from `ai/config/rules/`) as one line each, exact values verbatim from the spec and standards. `/ai-spec-apply` extracts this block verbatim and feeds it to every per-task reviewer — a missing or vague block means reviewers review without the project's mandatory constraints.
+
+**6. Task ID format:** Run the deterministic validator — it catches the #1 apply-breaker (non-numeric or non-contiguous task IDs) that a visual skim misses:
+
+```bash
+bash "ai/config/skills/goal-spec-propose/scripts/validate-tasks.sh" "$change_dir/tasks.md"
+```
+
+It must exit 0. If it reports non-numeric IDs (e.g. `A1`, `1.1`) or gaps in `1..N`, renumber the `### Task N:` headers to be pure integers continuous from 1 across all `## N. <Group>` sections.
 
 If the scan is clean, proceed. If you fix issues, the artifacts on disk are already updated (you edited inline) — proceed.
 
@@ -245,6 +268,7 @@ After completing all artifacts, summarize:
 - (Dependency reading and write-then-verify are mandated in step 5 above — do not skip them)
 
 ## Guardrails
+- **Always create exactly ONE change** regardless of how large the requirement is. Never suggest splitting a requirement into multiple changes, and never ask the user whether to split. A large requirement simply produces more tasks in a single change — that is expected and correct.
 - Create ALL artifacts needed for implementation (proposal, specs, design, tasks)
 - Always read dependency artifacts before creating a new one
 - If a change with that name already exists, ask if user wants to continue it or create a new one
